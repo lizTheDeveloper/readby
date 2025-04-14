@@ -58,6 +58,8 @@ class StoryGenerator:
         # Count how many lines need generation
         lines_to_generate = sum(1 for line in self.script_data["lines"] if line.get("needs_regeneration", True))
         print(f"{lines_to_generate} out of {len(self.script_data['lines'])} lines need generation")
+        self.last_generated_line = len(self.script_data["lines"]) - lines_to_generate
+        print(f"Last generated line: {self.last_generated_line + 1}")
 
     def save_script(self):
         """Save the current script data back to the JSON file"""
@@ -152,6 +154,8 @@ class StoryGenerator:
                 
                 if choice == 'y':
                     self.play_audio(line_index)
+                    ## give the user a chance to regenerate
+                    
                 elif choice == 'r':
                     line["needs_regeneration"] = True
                 
@@ -212,13 +216,21 @@ class StoryGenerator:
         
         return True
     
-    def batch_generation(self):
+    def batch_regeneration(self):
         """Generate all lines marked for regeneration without interaction"""
         for line_index, line in enumerate(self.script_data["lines"]):
             if line.get("needs_regeneration", True):
                 print(f"Generating line {line_index+1}...")
                 self.generate_audio_for_line(line_index)
         
+        print("Batch generation complete")
+    
+    def batch_generation(self):
+        """Generate all ungenerated lines in the script without interaction"""
+        for line_index, line in enumerate(self.script_data["lines"]):
+            if not line.get("audio_file"):
+                print(f"Generating line {line_index+1}...")
+                self.generate_audio_for_line(line_index)
         print("Batch generation complete")
     
     def combine_audio_files(self):
@@ -287,7 +299,7 @@ def main():
         print("\n=== Story Audio Generator ===")
         print("1. Interactive generation (with feedback)")
         print("2. Generate specific section interactively")
-        print("3. Batch generate all marked lines")
+        print("3. Batch generate all ungenerated lines")
         print("4. Mark specific line for regeneration")
         print("5. Play specific line")
         print("6. Combine all audio files")
@@ -301,9 +313,15 @@ def main():
             generator.interactive_generation()
             
         elif choice == '2':
-            start = int(input("Enter start line (1-based): ")) - 1
-            end = int(input("Enter end line (1-based): ")) - 1
-            generator.interactive_generation(start, end)
+            start = input("Enter start line (1-based): ")
+            end = input("Enter end line (1-based): ")
+            if not start.isdigit():
+                ## start on the last generated line
+                start = generator.last_generated_line
+            if not end.isdigit():
+                ## end on the last line
+                end = len(generator.script_data["lines"]) - 1
+            generator.interactive_generation(int(start), int(end))
             
         elif choice == '3':
             generator.batch_generation()

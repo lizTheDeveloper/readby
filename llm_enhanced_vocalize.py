@@ -203,9 +203,17 @@ def analyze_script(input_file="input.txt", output_file="enhanced_script.txt", js
 
 # Main execution
 if __name__ == "__main__":
-    input_file = "input.txt"
-    enhanced_script_file = "enhanced_script.txt"
-    json_script_file = "enhanced_script.json"
+    import sys
+    ## if the filename is provided as a command line argument, use that
+    if len(sys.argv) > 1:
+        input_file = sys.argv[1]
+        print(f"Input file: {input_file}")
+        enhanced_script_file = sys.argv[1].replace(".txt", "_enhanced.txt")
+        json_script_file = sys.argv[1].replace(".txt", "_enhanced.json")
+    else:
+        input_file = "input.txt"
+        enhanced_script_file = "enhanced_script.txt"
+        json_script_file = "enhanced_script.json"
     
     # Analyze the script
     analyses = analyze_script(input_file, enhanced_script_file, json_script_file)
