@@ -109,7 +109,18 @@ class StoryGenerator:
         if "audio_file" in line and os.path.exists(line["audio_file"]):
             print(f"Playing line {line_index+1}...")
             audio = AudioSegment.from_mp3(line["audio_file"])
-            play(audio)
+            ## try to play it and catch sigint (ctrl+c)
+            try:
+                play(audio)
+            except KeyboardInterrupt:
+                ## if playback is interrupted, just return
+                print("Playback interrupted")
+                ## mark the line for regeneration
+                line["needs_regeneration"] = True
+                self.save_script()
+                return False
+            print("Playback finished")
+                
             return True
         else:
             print(f"Audio file for line {line_index+1} doesn't exist")
