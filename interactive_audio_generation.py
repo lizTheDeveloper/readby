@@ -146,27 +146,77 @@ class StoryGenerator:
             
         for line_index in range(start_line, end_line + 1):
             line = self.script_data["lines"][line_index]
+            print(line["original_text"])
+            print(f"Voice instructions: {line['voice_instructions']}")
             
             # Skip if this line already has audio and doesn't need regeneration
             if "audio_file" in line and os.path.exists(line["audio_file"]) and not line.get("needs_regeneration", False):
                 print(f"\nLine {line_index+1} already has audio. Play it? (y/n/r): ", end="")
                 choice = input().lower()
+                if not choice:
+                    choice = 'y'
                 
                 if choice == 'y':
                     self.play_audio(line_index)
-                    ## give the user a chance to regenerate
+                    while True:
+                        ## give the user a chance to regenerate
+                        ## after playing, ask if they want to regenerate
+                        print("\nOptions:")
+                        print("  [g]ood - Accept and continue")
+                        print("  [r]egenerate - Regenerate with same instructions")
+                        print("  [m]odify - Modify voice instructions and regenerate")
+                        print("  [s]kip - Continue without accepting")
+                        
+                        ## ask the user what they want to do
+                        choice = input("Your choice: ").lower()
+                        if choice == 'g' or choice == "":
+                            ## accept and continue
+                            break
+                        elif choice == 'm':
+                            ## modify and regenerate
+                            print(f"Current instructions: {line['voice_instructions']}")
+                            new_instructions = input("Enter new voice instructions: ")
+                            line["voice_instructions"] = new_instructions
+                            line["needs_regeneration"] = True
+                            self.save_script()
+                            success = self.generate_audio_for_line(line_index)
+                            if success:
+                                self.play_audio(line_index)
+                            else:
+                                print("Failed to regenerate audio")
+                        elif choice == 's':
+                            ## skip without accepting
+                            line["needs_regeneration"] = True
+                            self.save_script()
+                            break
+                        elif choice == 'r':
+                            ## regenerate with same instructions
+                            line["needs_regeneration"] = True
+                            self.save_script()
+                            success = self.generate_audio_for_line(line_index)
+                            if success:
+                                self.play_audio(line_index)
+                            else:
+                                print("Failed to regenerate audio")
+                        elif choice == 'q':
+                            ## quit generation
+                            return False
+                        else:
+                            print("Invalid choice, please try again")
+                    
+                        
                     
                 elif choice == 'r':
                     line["needs_regeneration"] = True
                 
                 if not line.get("needs_regeneration", False):
                     continue
-            
-            # Generate audio for this line
-            success = self.generate_audio_for_line(line_index)
-            if not success:
-                print(f"Failed to generate audio for line {line_index+1}")
-                continue
+            else:
+                # Generate audio for this line
+                success = self.generate_audio_for_line(line_index)
+                if not success:
+                    print(f"Failed to generate audio for line {line_index+1}")
+                    continue
             
             # Play the generated audio
             self.play_audio(line_index)
